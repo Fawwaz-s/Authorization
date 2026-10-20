@@ -47,7 +47,3 @@ PKCE (Proof Key for Code Exchange) is a security mechanism used with OAuth 2.0 t
  - A password is created; a scrambled copy is given to the other app alongside a token, so even when token is stolen, the password will not match.
 PKCE protects the authorization-code exchange from interception attacks 
 
-OAUTH - RESOURCE OWNER, 
-CLIENT APP -  It sends the user through the login process, obtains or receives tokens, and uses them when making requests.
-AUTHORIZATION SERVER - It handles the authorization process and issues tokens after the required checks succeed.
-RESOURCE SERVER - It receives requests from the client, checks the access token and permissions, and returns the requested data if access is allowed.
