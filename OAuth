@@ -1,0 +1,64 @@
+Item	                          What it does                                             	What happens when it expires?
+Access token	         Lets the client access a protected API.                   The client obtains a new one, often using a refresh token.
+Refresh token	         Lets the client request new access tokens	               The client may use it until it expires or is revoked; then reauthentication may be required.
+Private key	           Signs tokens or proves a system's identity	               It usually does not expire like a token. It is rotated when required by a security policy, certificate expiry, or compromise.
+Public key	           Lets the resource server verify signatures made by the corresponding private key.          	It is updated or retrieved when the issuer rotates its signing keys.
+A crucial distinction: a JWT is a token format, not a key. A JWT can expire even though the key used to sign it remains valid.
+
+OAUTH - RESOURCE OWNER, 
+CLIENT APP -  It sends the user through the login process, obtains or receives tokens, and uses them when making requests.
+AUTHORIZATION SERVER - It handles the authorization process and issues tokens after the required checks succeed.
+RESOURCE SERVER - It receives requests from the client, checks the access token and permissions, and returns the requested data if access is allowed.
+
+Error or symptom                               	What you might investigate
+Auth server is unreachable          	DNS, networking, TLS certificates, service status and logs
+Login fails	                          Redirect URI, client configuration, credentials and authorization flow
+Token request fails	                  Authorization code, PKCE verifier, client authentication, and token endpoint
+Resource server returns 401	          Missing, expired or invalid access token
+Resource server returns 403         	Insufficient permissions or scope, or an authorization policy
+These are possible causes, not definitive diagnoses. A 401 or 403 alone does not tell you exactly what went wrong.
+Your key takeaway: the client app requests access, the auth server handles authorization and token issuance, and the resource server protects the data.
+
+
+There is no universal directory structure for OAuth. These are typical examples for a Linux deployment, not guaranteed paths universally.
+A. auth-server/
+Issues tokens and, in many implementations, signs JWTs.
+auth-server/
+├── server.js  # server.js: handles login, token requests and token issuance.
+├── .env  # .env: may hold configuration such as token lifetime or a key-file path.
+├── keys/
+│   ├── private.pem # keys/private.pem: a possible location for the signing private key.
+│   └── public.pem #  keys/public.pem: a possible copy of the public key.
+└── logs/
+
+When an access token expires: the server validates the refresh token and issues a new access token. It does not normally generate a new private key.
+When the signing key needs rotation: an administrator or automated key-management system generates a new key pair, configures the issuer to use the new private key, 
+and publishes the corresponding public key.
+
+B. resource-server/
+Protects the API and validates access tokens.
+resource-server/
+├── server.js #server.js: checks incoming requests and enforces access rules.
+├── .env
+├── config/
+│   └── auth-config.js
+├── cache/ # cache/: represents a possible application cache; public keys may instead be cached in memory.
+└── logs/ # logs/: records authentication failures and other diagnostic events.
+
+When a token expires: the resource server rejects it; the client should obtain a replacement. The resource server normally does not issue tokens or regenerate signing keys.
+When the signing key rotates: it obtains the issuer's updated public keys, often through a JWKS endpoint, and uses them to verify tokens.
+If it keeps stale keys cached, valid tokens signed with a new key may fail verification. 
+
+C. client-app/
+Requests tokens and uses them to call the API.
+client-app/
+├── app.js # app.js: starts the authorization flow and calls the API.
+├── .env # .env: may contain a client ID, server-side client secret, or endpoint URLs.
+├── routes/
+├── sessions/ # sessions/: represents possible session-related code or storage, not a standard OAuth directory.
+└── logs/ # logs/: records useful diagnostic information, without exposing tokens or secrets.
+
+When the access token expires: the client uses a refresh token, if one is available, to request a replacement. It updates its stored token and retries the API request as appropriate.
+Tokens might be held in server memory, a database, a session store, or browser storage, depending on the application. There is no standard tokens/ directory.
+
+
